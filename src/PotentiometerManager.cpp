@@ -1,4 +1,5 @@
 #include "PotentiometerManager.h"
+#include <stdexcept>
 
 PotentiometerManager::PotentiometerManager() {}
 

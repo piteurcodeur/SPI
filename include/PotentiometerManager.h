@@ -3,8 +3,6 @@
 
 #include <vector>
 #include "MCP2210Interface.h"
-#include <stdexcept>
-
 
 class PotentiometerManager {
 public:

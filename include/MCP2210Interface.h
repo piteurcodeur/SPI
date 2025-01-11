@@ -3,7 +3,6 @@
 
 #include <vector>
 #include "mcp2210.h"
-#include <stdexcept>
 
 #define NUM_POTS 10
 
@@ -19,6 +18,7 @@ public:
 
 private:
     hid_device* handle;
+    void sendSPICommand(const std::vector<uint8_t>& commandFrames, std::vector<uint8_t>& responseFrames);
 };
 
 #endif
