@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build MCP2210 Project",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-I", "./include",
+                "-L", "./lib",
+                "-o", "./build/main.exe",
+                "./src/*.cpp",
+                "-lhidapi", "-lsetupapi", "-lhid",
+                "-static-libgcc", "-static-libstdc++"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Build MCP2210 project using g++"
+        }
+    ]
+}
