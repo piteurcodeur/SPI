@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
-#include <string>
 #include "PotentiometerManager.h"
+#include <string>
 
 void printHelp() {
     std::cout << "Usage: mcp2210_cli [options]\n"
