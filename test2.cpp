@@ -2,29 +2,17 @@
 #include <vector>
 #include "mcp2210.h"
 
-#define SPI_CLOCK_SPEED 1000000 // 1 MHz
-#define SPI_MODE 0 // SPI mode 0 : CPOL = 0, CPHA = 0
+
+#define SPI_CLOCK_SPEED 31000 // Vitesse d'horloge SPI (en kHz)
+#define SPI_MODE 1
 #define NUM_POTS 10 // Nombre de potentiomètres en chaîne
 
-// Envoi d'une commande SPI et récupération de la réponse
-void sendSPICommand(hid_device* handle, const std::vector<uint8_t>& command, std::vector<uint8_t>& response) {
-    uint8_t cmdBuffer[COMMAND_BUFFER_LENGTH] = {0};
-    uint8_t responseBuffer[RESPONSE_BUFFER_LENGTH] = {0};
-
-    // Copier la commande dans le buffer
-    std::copy(command.begin(), command.end(), cmdBuffer);
-
-    // Transfert SPI
-    SPIDataTransferStatusDef status = SPISendReceive(handle, cmdBuffer, command.size(), RESPONSE_BUFFER_LENGTH);
-
-    if (status.ErrorCode != OPERATION_SUCCESSFUL) {
-        std::cerr << "Erreur SPI : " << status.ErrorCode << std::endl;
-        return;
-    }
-
-    // Copier la réponse
-    std::copy(status.DataReceived, status.DataReceived + RESPONSE_BUFFER_LENGTH, response.begin());
+// Envoi d'une commande SPI
+void sendSPICommand(hid_device* handle, const std::vector<uint8_t>& command)
+{
+    
 }
+
 
 // Lire la valeur actuelle de la résistance
 uint16_t readCurrentResistance(hid_device* handle, int potIndex) {
@@ -97,6 +85,11 @@ int main() {
     spiSettings.BitRate = SPI_CLOCK_SPEED;
     spiSettings.SPIMode = SPI_MODE;
     spiSettings.BytesPerSPITransfer = 2 * NUM_POTS; // 2 octets par potentiomètre
+    spiSettings.IdleChipSelectValue = 0xffff; // Valeur de CS inactive
+    spiSettings.ActiveChipSelectValue = 0xffef; // Valeur de CS active
+    spiSettings.CSToDataDelay = 0; // Pas de délai entre CS et données
+    spiSettings.LastDataByteToCSDelay = 0; // Pas de délai entre le dernier octet de données et CS
+    spiSettings.SubsequentDataByteDelay = 0; // Pas de délai entre les octets de données
 
     int result = SetSPITransferSettings(handle, spiSettings, true);
     if (result != OPERATION_SUCCESSFUL) {
@@ -106,9 +99,14 @@ int main() {
     }
 
     // Valeurs de résistances à programmer pour chaque potentiomètre
-    std::vector<uint16_t> resistances = {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
+    std::vector<uint16_t> resistances = {10000, 10000, 10000, 10000, 10000,
+                                          10000, 10000, 10000, 10000, 10000};
 
-    // Processus pour programmer les potentiomètres
+    //initialisation des potentiomètres
+    std::vector<uint8_t> cmdInit = {0x1C, 0x03};
+
+   
+
     processPotentiometers(handle, resistances);
 
     // Libération des ressources
