@@ -45,6 +45,15 @@ typedef enum {
   MEMORY_PROGRAM_SUCCESFUL = 8
 } AD5270ControlRegisterBits_t;
 
+void CheckSPIstatus(hid_device* handle, SPIDataTransferStatusDef _status)
+{
+    if (_status.ErrorCode != SPI_DATA_TRANSFER_SUCCESS)
+    {
+        std::cerr << "Erreur de transfert SPI : " << _status.ErrorCode << std::endl;
+        return;
+    }
+}
+
 uint16_t AD5270_ReadReg(hid_device* handle, uint8_t index, uint8_t command) {
 
     uint8_t data[2 * NB_COMPO];
@@ -98,20 +107,13 @@ void AD5270_WriteReg(uint8_t index, uint8_t command, uint16_t value) {
     CheckSPIstatus(handle, _status);
 }
 
-void CheckSPIstatus(hid_device* handle, SPIDataTransferStatusDef _status)
-{
-    if (_status.ErrorCode != SPI_DATA_TRANSFER_SUCCESS)
-    {
-        std::cerr << "Erreur de transfert SPI : " << _status.ErrorCode << std::endl;
-        return;
-    }
-}
+
 
 void setup() {
     handle = InitMCP2210();
     if (!handle) {
         std::cerr << "Erreur : Impossible d'initialiser le MCP2210." << std::endl;
-        return;
+        exit(EXIT_FAILURE);
     }
     // Configuration des paramètres SPI
     SPITransferSettingsDef spiSettings;
