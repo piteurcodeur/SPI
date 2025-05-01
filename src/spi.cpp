@@ -11,6 +11,7 @@
 #define SPI_MODE 1
 #define NUM_POTS 10
 #define SPI_DATA_TRANSFER_SUCCESS 0
+#define CS_PIN 4
 
 SPIDataTransferStatusDef _status;
 hid_device* handle = NULL;
@@ -44,6 +45,25 @@ typedef enum {
   R_PERFORMANCE_ENABLE = 4,
   MEMORY_PROGRAM_SUCCESFUL = 8
 } AD5270ControlRegisterBits_t;
+
+void verifyControlRegister(int index);
+void CheckSPIstatus(hid_device* handle, SPIDataTransferStatusDef _status);
+uint16_t AD5270_ReadReg(hid_device* handle, uint8_t index, uint8_t command);
+void AD5270_WriteReg(uint8_t index, uint8_t command, uint16_t value);
+void setup();
+void setPots(int index, uint16_t valeurs);
+uint16_t readPot(int index);
+
+
+
+// Vérifie les registres de contrôle des potentiomètres
+void verifyControlRegister(int index) {
+    
+    uint16_t controlReg = AD5270_ReadReg(handle, index, READ_CTRL_REG);
+    std::cout << "Pot " << index << " : Registre de contrôle = 0x" 
+                << std::hex << controlReg << std::dec << std::endl;
+    
+}
 
 void CheckSPIstatus(hid_device* handle, SPIDataTransferStatusDef _status)
 {
@@ -115,6 +135,19 @@ void setup() {
         std::cerr << "Erreur : Impossible d'initialiser le MCP2210." << std::endl;
         exit(EXIT_FAILURE);
     }
+
+    // chip settings
+    ChipSettingsDef chipSettings;
+    chipSettings.DedicatedFunctionInterruptPinMode = 0; // Pas de fonction dédiée sur l'interruption
+    chipSettings.GP[CS_PIN].GPIODirection = GPIO_DIRECTION_OUTPUT; // CS en sortie
+    chipSettings.GP[CS_PIN].GPIOOutput = 1; // CS inactif
+    chipSettings.GP[CS_PIN].PinDesignation = GP_PIN_DESIGNATION_CS; // Fonction GPIO
+    chipSettings.NVRamChipParamAccessControl = 0; // Pas de protection d'accès
+    chipSettings.RemoteWakeUpEnabled = 0; // Pas de réveil à distance
+    chipSettings.SPIBusReleaseMode = 1;
+
+
+
     // Configuration des paramètres SPI
     SPITransferSettingsDef spiSettings;
     spiSettings.BitRate = FREQUENCY; // Vitesse d'horloge SPI
@@ -143,11 +176,19 @@ void setPots(int index, uint16_t valeurs)
         return;
     }
 
-    uint16_t setValue;
     uint16_t RDAC_val = ((uint16_t)((valeurs / MAX_RESISTANCE) * 1024.0));
 
-    AD5270_WriteReg(index, WRITE_CTRL_REG, 0x02);
+    // Désactiver la protection en écriture des RDAC
+    AD5270_WriteReg(index, WRITE_CTRL_REG, RDAC_WRITE_PROTECT); // Mettre le bit RDAC_WRITE_PROTECT à 1
+    
     usleep(50);
+
+    // Vérification des registres de contrôle
+    verifyControlRegister(index);
+
+    usleep(50);
+
+    // Écrire dans le RDAC
     AD5270_WriteReg(index, WRITE_RDAC, RDAC_val);
 }
 
@@ -162,16 +203,15 @@ uint16_t readPot(int index)
     return (uint16_t)(((float)(RDAC_val)*MAX_RESISTANCE) / 1024.0);
 }
 
+
+
 int main() {
-
-
     setup();
-    
-    uint16_t valeurs[10]  = {1000 , 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000};
+
+    uint16_t valeurs[10] = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000};
 
     // Exemple : valeurs progressives
-    for (int i = 0; i < 10; i++)
-    {
+    for (int i = 0; i < 10; i++) {
         setPots(i, valeurs[i]); // Valeurs de 1000 à 10000
     }
 
@@ -179,13 +219,14 @@ int main() {
     std::cout << "Lecture des potentiomètres :" << std::endl;
     for (int i = 0; i < NB_COMPO; i++) {
         uint16_t lu = readPot(i);
-
         std::cout << "Pot " << i << " : " << lu << std::endl;
-
         usleep(10);  // Pour lisibilité console
     }
+
+    
+
     std::cout << "-----------------------" << std::endl;
-usleep(1000);
+    usleep(1000);
 
     return EXIT_SUCCESS;
 }
